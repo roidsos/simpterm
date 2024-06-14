@@ -50,6 +50,8 @@ void __st_plot_glyph(st_ctx* ctx, u32 x, u32 y, u32 g, u32 color){
         for(u32 j = 0; j < ctx->font_width; j++){
             if((glyph[i * ((ctx->font_width / 8) + 1) + j / 8] >> (7 - j % 8)) & 1){
                 __st_plot_pixel(ctx, x * ctx->font_width + j, y * ctx->font_height + i, color);
+            } else {
+             ///   __st_plot_pixel(ctx, x * ctx->font_width + j, y * ctx->font_height + i, 0x0000FF);
             }
         }
     }
@@ -58,9 +60,6 @@ void __st_plot_glyph(st_ctx* ctx, u32 x, u32 y, u32 g, u32 color){
 
 
 u32 __st_get_glyph(st_ctx* ctx, u64 c) {
-    if (c <= 128) {
-        return (u32)c;
-    }
     if (ctx->font_type == 1 && ctx->font_utbl != NULL) { // PSF1
         u16* table = (u16*)(ctx->font_utbl);
         u32 glyph_index = 0;
@@ -76,34 +75,35 @@ u32 __st_get_glyph(st_ctx* ctx, u64 c) {
     } else if (ctx->font_type == 2 && ctx->font_utbl != NULL) { // PSF2
         u8* table = (u8*)(ctx->font_utbl);
         u32 glyph_index = 0;
-        while (*table != 0xFF) {
-            u32 unicode_char = 0;
-            int len = 0;
-            if ((*table & 0x80) == 0x00) {
-                unicode_char = *table;
-                len = 1;
-            } else if ((*table & 0xE0) == 0xC0) {
-                unicode_char = (*table & 0x1F) << 6 | (table[1] & 0x3F);
-                len = 2;
-            } else if ((*table & 0xF0) == 0xE0) {
-                unicode_char = (*table & 0x0F) << 12 | (table[1] & 0x3F) << 6 | (table[2] & 0x3F);
-                len = 3;
-            } else if ((*table & 0xF8) == 0xF0) {
-                unicode_char = (*table & 0x07) << 18 | (table[1] & 0x3F) << 12 | (table[2] & 0x3F) << 6 | (table[3] & 0x3F);
-                len = 4;
+        u64 uc = 0;
+        while (table <= (u8*)ctx->font_addr + ctx->font_size) {
+            uc = *table;
+            if(*table == 0xff){
+                glyph_index++;
+                table++;
+                continue;
+            } else if (*table & 128) {
+                if((uc & 32) == 0 ) {
+                    uc = ((table[0] & 0x1F)<<6)+(table[1] & 0x3F);
+                    table++;
+                } else
+                if((uc & 16) == 0 ) {
+                    uc = ((((table[0] & 0xF)<<6)+(table[1] & 0x3F))<<6)+(table[2] & 0x3F);
+                    table+=2;
+                } else if((uc & 8) == 0 ) {
+                    uc = ((((((table[0] & 0x7)<<6)+(table[1] & 0x3F))<<6)+(table[2] & 0x3F))<<6)+(table[3] & 0x3F);
+                    table+=3;
+                } else {
+                    uc = 0;
+                }
             }
-            if (unicode_char == c) {
+            if(uc == c) {
                 return glyph_index;
             }
-            if (*table == 0xFE) {
-                glyph_index++;
-            }
-            table += len;
+            table++;
         }
-    } else if (ctx->font_utbl == NULL) {
-        return (u32)c;
     }
-    return 0;
+    return (u32)c;
 }
 
 st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
@@ -131,6 +131,7 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
 
     //interpret the font data
     new_ctx.font_addr = font_data;
+    new_ctx.font_size = font_size;
     if((*(u16*)font_data) == PSF1_MAGIC){
         new_ctx.font_type = 1;
         new_ctx.font_glyphs = (u32*)((u8*)font_data + sizeof(psf1_header));
@@ -153,7 +154,7 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
             (u32*)((u8*)new_ctx.font_glyphs + new_ctx.font_bytes_per_glyph * new_ctx.font_glyph_count) 
             : NULL;
     }
-    //test all unicode codepoints up to 0xFF!
+
     for(int i = 0; i < 256; i++){
         __st_plot_glyph(&new_ctx, i % (new_ctx.fb_width / new_ctx.font_width),i / (new_ctx.fb_width / new_ctx.font_width), __st_get_glyph(&new_ctx, i), 0xFFFFFFFF);
     }

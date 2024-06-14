@@ -24,11 +24,12 @@ typedef struct {
 
     //Font stuff
     u32*  font_addr;
+    u32   font_size;
+    u8    font_type;
     u32   font_width;
     u32   font_height;
     u32   font_glyph_count;
     u32   font_bytes_per_glyph;
-    u8    font_type;
     u32*  font_glyphs;
     u32*  font_utbl;
 
