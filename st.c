@@ -123,7 +123,10 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
 
         .cur_x = 0,
         .cur_y = 0,
-        .cur_visible = false
+        .cur_visible = false,
+
+        .color_bg = 0x000000,
+        .color_fg = 0xffffff,
     };
 
     //interpret the font data
@@ -151,9 +154,6 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
             (u32*)((u8*)new_ctx.font_glyphs + new_ctx.font_bytes_per_glyph * new_ctx.font_glyph_count) 
             : NULL;
     }
-    new_ctx.color_bg = 0x000000;
-    new_ctx.color_fg = 0xffffff;
-
     for(int i = 0; i < 256; i++){
         __st_plot_glyph(&new_ctx, i % (new_ctx.fb_width / new_ctx.font_width),i / (new_ctx.fb_width / new_ctx.font_width), __st_get_glyph(&new_ctx, i));
     }
