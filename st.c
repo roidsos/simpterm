@@ -62,6 +62,16 @@ void __st_clear(st_ctx* ctx){
     }
 }
 
+void __st_render_cursor(st_ctx* ctx){
+    if(ctx->cur_visible){
+        for(u32 i = 0; i < ctx->font_height; i++){
+            for(u32 j = 0; j < ctx->font_width; j++){
+                __st_plot_pixel(ctx, ctx->cur_x * ctx->font_width + j, ctx->cur_y * ctx->font_height + i, ctx->color_fg);
+            }
+        }
+    }
+}
+
 //===============================Table functions===============================
 
 u32 __st_get_glyph(st_ctx* ctx, u64 c) {
@@ -114,23 +124,56 @@ u32 __st_get_glyph(st_ctx* ctx, u64 c) {
 //===============================Public functions===============================
 
 //TODO: multiple characters and UNICODE
-void st_write(st_ctx* ctx, char c){
-    switch(c){
+void st_write(st_ctx* ctx, u8 c){
+
+    if (ctx->uc_remaining > 0) {
+        if ((c & 0xc0) != 0x80) {
+            ctx->uc_remaining = 0;
+        } else {
+            ctx->uc_codepoint = (c & 0x3f) << (6 * ctx->uc_codepoint);
+            ctx->uc_remaining--;
+            if (ctx->uc_remaining == 0) {
+                goto print;
+            }
+        }
+        return;
+    }
+    if (c >= 0xc0 && c <= 0xf7) {
+        if (c >= 0xc0 && c <= 0xdf) {
+            ctx->uc_remaining = 1;
+            ctx->uc_codepoint = (u64)(c & 0x1f) << 6;
+        } else if (c >= 0xe0 && c <= 0xef) {
+            ctx->uc_remaining = 2;
+            ctx->uc_codepoint = (u64)(c & 0x0f) << (6 * 2);
+        } else if (c >= 0xf0 && c <= 0xf7) {
+            ctx->uc_remaining = 3;
+            ctx->uc_codepoint = (u64)(c & 0x07) << (6 * 3);
+        }
+        return;
+    }
+
+    ctx->uc_codepoint = c;
+
+    print:
+    switch(ctx->uc_codepoint){
         case '\n':
             newline:
+            __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, ' ')); // clear the remaining cursor
             ctx->cur_x = 0;
             ctx->cur_y++;
             if(ctx->cur_y >= (ctx->fb_height/ctx->font_height) - 5){
                 //TODO: scroll
             }
+            __st_render_cursor(ctx);
             break;
         case '\b':
             ctx->cur_x--;
             break;
         default:
-            __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, c));
+            __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, ctx->uc_codepoint));
             ctx->cur_x++;
             if(ctx->cur_x >= ctx->fb_width/ctx->font_width) goto newline;
+            __st_render_cursor(ctx);
             break;
     }
 }
@@ -155,10 +198,13 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
 
         .cur_x = 0,
         .cur_y = 0,
-        .cur_visible = false,
+        .cur_visible = true,
 
         .color_bg = 0x000000,
         .color_fg = 0xffffff,
+
+        .uc_codepoint = 0,
+        .uc_remaining = 0
     };
 
     //interpret the font data
@@ -186,6 +232,7 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
             (u32*)((u8*)new_ctx.font_glyphs + new_ctx.font_bytes_per_glyph * new_ctx.font_glyph_count) 
             : NULL;
     }
+    __st_render_cursor(&new_ctx);
 
     return new_ctx;
 }

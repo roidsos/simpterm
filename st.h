@@ -36,10 +36,12 @@ typedef struct {
     //State
     u32 color_fg;
     u32 color_bg;
+    u8  uc_remaining;
+    u64 uc_codepoint;
 
 } st_ctx;
 
-void st_write(st_ctx* ctx, char c);
+void st_write(st_ctx* ctx, u8 c);
 
 st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
                u32 fb_bpp, u8 fb_red_mask_size, u8 fb_red_mask_shift, 
