@@ -117,8 +117,12 @@ u32 __st_get_glyph(st_ctx* ctx, u64 c) {
 void st_write(st_ctx* ctx, char c){
     switch(c){
         case '\n':
+            newline:
             ctx->cur_x = 0;
             ctx->cur_y++;
+            if(ctx->cur_y >= (ctx->fb_height/ctx->font_height) - 5){
+                //TODO: scroll
+            }
             break;
         case '\b':
             ctx->cur_x--;
@@ -126,6 +130,7 @@ void st_write(st_ctx* ctx, char c){
         default:
             __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, c));
             ctx->cur_x++;
+            if(ctx->cur_x >= ctx->fb_width/ctx->font_width) goto newline;
             break;
     }
 }
