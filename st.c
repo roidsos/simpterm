@@ -26,6 +26,8 @@ typedef struct {
     u32 font_width;
 } psf2_header;
 
+//===============================Drawing functions===============================
+
 void __st_plot_pixel(st_ctx* ctx, u32 x, u32 y, u32 color){
     if(x < 0 || x >= ctx->fb_width || y < 0 || y >= ctx->fb_height){
         return;
@@ -54,7 +56,13 @@ void __st_plot_glyph(st_ctx* ctx, u32 x, u32 y, u32 g){
     }
 }
 
+void __st_clear(st_ctx* ctx){
+    for(u32 i = 0; i < ctx->fb_width * ctx->fb_height; i++){
+        __st_plot_pixel(ctx, i % ctx->fb_width, i / ctx->fb_width, ctx->color_bg);
+    }
+}
 
+//===============================Table functions===============================
 
 u32 __st_get_glyph(st_ctx* ctx, u64 c) {
     if (ctx->font_type == 1 && ctx->font_utbl != NULL) { // PSF1
@@ -101,6 +109,25 @@ u32 __st_get_glyph(st_ctx* ctx, u64 c) {
         }
     }
     return (u32)c;
+}
+
+//===============================Public functions===============================
+
+//TODO: multiple characters and UNICODE
+void st_write(st_ctx* ctx, char c){
+    switch(c){
+        case '\n':
+            ctx->cur_x = 0;
+            ctx->cur_y++;
+            break;
+        case '\b':
+            ctx->cur_x--;
+            break;
+        default:
+            __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, c));
+            ctx->cur_x++;
+            break;
+    }
 }
 
 st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
@@ -153,9 +180,6 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
         new_ctx.font_utbl = ((psf2_header*)font_data)->flags & (PSF2_FLAG_UC) ?
             (u32*)((u8*)new_ctx.font_glyphs + new_ctx.font_bytes_per_glyph * new_ctx.font_glyph_count) 
             : NULL;
-    }
-    for(int i = 0; i < 256; i++){
-        __st_plot_glyph(&new_ctx, i % (new_ctx.fb_width / new_ctx.font_width),i / (new_ctx.fb_width / new_ctx.font_width), __st_get_glyph(&new_ctx, i));
     }
 
     return new_ctx;

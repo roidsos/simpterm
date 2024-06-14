@@ -39,6 +39,7 @@ typedef struct {
 
 } st_ctx;
 
+void st_write(st_ctx* ctx, char c);
 
 st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
                u32 fb_bpp, u8 fb_red_mask_size, u8 fb_red_mask_shift, 
