@@ -38,7 +38,7 @@ void __st_plot_pixel(st_ctx* ctx, u32 x, u32 y, u32 color){
     *(u32*)&((u8*)ctx->fb_addr)[y * ctx->fb_pitch + x * (ctx->fb_bpp / 8)] = transformed_color;
 }
 
-void __st_plot_glyph(st_ctx* ctx, u32 x, u32 y, u32 g, u32 color){
+void __st_plot_glyph(st_ctx* ctx, u32 x, u32 y, u32 g){
     if(x < 0 || x >= ctx->fb_width/ctx->font_width || y < 0 || y >= ctx->fb_height/ctx->font_height || g >= ctx->font_glyph_count){
         return;
     }
@@ -48,11 +48,8 @@ void __st_plot_glyph(st_ctx* ctx, u32 x, u32 y, u32 g, u32 color){
     for(u32 i = 0; i < ctx->font_height; i++){
         // if you know how to make it less of a mess, please let me know
         for(u32 j = 0; j < ctx->font_width; j++){
-            if((glyph[i * ((ctx->font_width / 8) + 1) + j / 8] >> (7 - j % 8)) & 1){
-                __st_plot_pixel(ctx, x * ctx->font_width + j, y * ctx->font_height + i, color);
-            } else {
-             ///   __st_plot_pixel(ctx, x * ctx->font_width + j, y * ctx->font_height + i, 0x0000FF);
-            }
+            _bool draw = (glyph[i * ((ctx->font_width / 8) + 1) + j / 8] >> (7 - j % 8)) & 1;
+            __st_plot_pixel(ctx, x * ctx->font_width + j, y * ctx->font_height + i, draw ? ctx->color_fg : ctx->color_bg);
         }
     }
 }
@@ -154,9 +151,11 @@ st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
             (u32*)((u8*)new_ctx.font_glyphs + new_ctx.font_bytes_per_glyph * new_ctx.font_glyph_count) 
             : NULL;
     }
+    new_ctx.color_bg = 0x000000;
+    new_ctx.color_fg = 0xffffff;
 
     for(int i = 0; i < 256; i++){
-        __st_plot_glyph(&new_ctx, i % (new_ctx.fb_width / new_ctx.font_width),i / (new_ctx.fb_width / new_ctx.font_width), __st_get_glyph(&new_ctx, i), 0xFFFFFFFF);
+        __st_plot_glyph(&new_ctx, i % (new_ctx.fb_width / new_ctx.font_width),i / (new_ctx.fb_width / new_ctx.font_width), __st_get_glyph(&new_ctx, i));
     }
 
     return new_ctx;

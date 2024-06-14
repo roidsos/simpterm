@@ -33,6 +33,10 @@ typedef struct {
     u32*  font_glyphs;
     u32*  font_utbl;
 
+    //State
+    u32 color_fg;
+    u32 color_bg;
+
 } st_ctx;
 
 
