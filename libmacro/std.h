@@ -13,12 +13,14 @@ typedef signed int s32;
 typedef signed long long s64;
 
 typedef unsigned long uptr;
+typedef unsigned int usize;
 
 typedef unsigned char _bool; // so limine.h wont fuck with my kernel
 
 #define true 1
 #define false 0
 
+#define PACKED __attribute__((packed))
 
 #define NULL ((void *)0)
 

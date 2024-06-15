@@ -3,6 +3,11 @@
 
 #include "libmacro/std.h"
 #include <st_config.h>
+typedef struct {
+    u16 glyph_num : 12;
+    u32 fg_col : 24;
+    u32 bg_col : 24;
+} PACKED st_color_cell;
 
 typedef struct {
     //Framebuffer stuff
@@ -39,15 +44,16 @@ typedef struct {
     u32 color_bg;
     u8  uc_remaining;
     u64 uc_codepoint;
+    st_color_cell screen_table[ST_MAX_WIDTH * ST_MAX_HEIGHT];
 
 } st_ctx;
 
-void st_write(st_ctx* ctx, u8 c);
+void st_write(u8 c);
 
-st_ctx st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
+void st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
                u32 fb_bpp, u8 fb_red_mask_size, u8 fb_red_mask_shift, 
                u8 fb_green_mask_size, u8 fb_green_mask_shift, u8 fb_blue_mask_size, u8 fb_blue_mask_shift,
-               
+
                u32* font_data,u32 font_size);
 
 #endif // __ST_H__
