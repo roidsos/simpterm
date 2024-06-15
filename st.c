@@ -10,22 +10,6 @@
 
 #define PSF2_FLAG_UC 0x01
 
-
-// bump alloc yoinked from https://github.com/mintsuki/flanterm/blob/trunk/backends/fb.c
-
-static u8 bump_alloc_pool[ST_MAX_POOL_SIZE];
-static usize bump_alloc_ptr = 0;
-
-static void *bump_alloc(usize s) {
-    usize next_ptr = bump_alloc_ptr + s;
-    if (next_ptr > ST_MAX_POOL_SIZE) {
-        return NULL;
-    }
-    void *ret = &bump_alloc_pool[bump_alloc_ptr];
-    bump_alloc_ptr = next_ptr;
-    return ret;
-}
-
 typedef struct {
    u16 magic;
    u8 mode;
