@@ -285,7 +285,7 @@ void st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
 
     }else if((*(u32*)font_data) == PSF2_MAGIC){
         ctx.font_type = 2;
-        ctx.font_glyphs = (u32*)((u8*)font_data + sizeof(psf2_header));
+        ctx.font_glyphs = (u32*)((u8*)font_data + ((psf2_header*)font_data)->header_size);
         ctx.font_glyph_count = ((psf2_header*)font_data)->glyph_count;
         ctx.font_height = ((psf2_header*)font_data)->font_height;
         ctx.font_width = ((psf2_header*)font_data)->font_width;
