@@ -2,6 +2,7 @@
 #define __ST_H__
 
 #include "libmacro/std.h"
+#include <st_config.h>
 
 typedef struct {
     //Framebuffer stuff

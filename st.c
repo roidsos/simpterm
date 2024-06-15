@@ -130,14 +130,14 @@ void st_write(st_ctx* ctx, u8 c){
         if ((c & 0xc0) != 0x80) {
             ctx->uc_remaining = 0;
         } else {
-            ctx->uc_codepoint = (c & 0x3f) << (6 * ctx->uc_codepoint);
             ctx->uc_remaining--;
-            if (ctx->uc_remaining == 0) {
-                goto print;
+            ctx->uc_codepoint |= (u64)(c & 0x3f) << (6 * ctx->uc_remaining);
+            if (ctx->uc_remaining != 0) {
+                return;
             }
         }
-        return;
     }
+
     if (c >= 0xc0 && c <= 0xf7) {
         if (c >= 0xc0 && c <= 0xdf) {
             ctx->uc_remaining = 1;
@@ -155,10 +155,11 @@ void st_write(st_ctx* ctx, u8 c){
     ctx->uc_codepoint = c;
 
     print:
+    #define ST_ERASE_CHAR(ctx, x, y) __st_plot_glyph(ctx, x, y, __st_get_glyph(ctx, ' '))
     switch(ctx->uc_codepoint){
         case '\n':
             newline:
-            __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, ' ')); // clear the remaining cursor
+            ST_ERASE_CHAR(ctx, ctx->cur_x, ctx->cur_y);
             ctx->cur_x = 0;
             ctx->cur_y++;
             if(ctx->cur_y >= (ctx->fb_height/ctx->font_height) - 5){
@@ -168,6 +169,14 @@ void st_write(st_ctx* ctx, u8 c){
             break;
         case '\b':
             ctx->cur_x--;
+            break;
+        case '\r':
+            ST_ERASE_CHAR(ctx, ctx->cur_x, ctx->cur_y);
+            ctx->cur_x = 0;
+            break;
+        case '\t':
+            ST_ERASE_CHAR(ctx, ctx->cur_x, ctx->cur_y);
+            ctx->cur_x += ctx->cur_x % ST_TAB_WIDTH;
             break;
         default:
             __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, ctx->uc_codepoint));
