@@ -1,4 +1,5 @@
 #include "st.h"
+#include "st_config.h"
 
 #define PSF1_MAGIC 0x0436
 #define PSF2_MAGIC 0x864ab572
@@ -126,6 +127,7 @@ u32 __st_get_glyph(st_ctx* ctx, u64 c) {
 //TODO: multiple characters and UNICODE
 void st_write(st_ctx* ctx, u8 c){
 
+    //This lump of code stitches UNICODE characters together from UTF-8 multy-byte characters.
     if (ctx->uc_remaining > 0) {
         if ((c & 0xc0) != 0x80) {
             ctx->uc_remaining = 0;
@@ -135,10 +137,12 @@ void st_write(st_ctx* ctx, u8 c){
             if (ctx->uc_remaining != 0) {
                 return;
             }
-            goto print;
         }
+    } else {
+        ctx->uc_codepoint = c;
     }
 
+    //This lump of code detects UTF-8 multy-byte characters, and sets the ctx->uc_remaining variable to how many bytes are remaining.
     if (c >= 0xc0 && c <= 0xf7) {
         if (c >= 0xc0 && c <= 0xdf) {
             ctx->uc_remaining = 1;
@@ -153,20 +157,16 @@ void st_write(st_ctx* ctx, u8 c){
         return;
     }
 
-    ctx->uc_codepoint = c;
-
-    print:
-    #define ST_ERASE_CHAR(ctx, x, y) __st_plot_glyph(ctx, x, y, __st_get_glyph(ctx, ' '))
+    #define ST_ERASE_CHAR __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, ' '))
     switch(ctx->uc_codepoint){
         case 0x00:
         case 0x7f:
-            goto advance;
             return; //ignore
         case 0x0b://FALLTHROUGH
         case 0x0c://FALLTHROUGH
         case '\n':
             newline:
-            ST_ERASE_CHAR(ctx, ctx->cur_x, ctx->cur_y);
+            ST_ERASE_CHAR;
             ctx->cur_x = 0;
             ctx->cur_y++;
             if(ctx->cur_y >= (ctx->fb_height/ctx->font_height) - 5){
@@ -178,16 +178,15 @@ void st_write(st_ctx* ctx, u8 c){
             ctx->cur_x--;
             break;
         case '\r':
-            ST_ERASE_CHAR(ctx, ctx->cur_x, ctx->cur_y);
+            ST_ERASE_CHAR;
             ctx->cur_x = 0;
             break;
         case '\t':
-            ST_ERASE_CHAR(ctx, ctx->cur_x, ctx->cur_y);
+            ST_ERASE_CHAR;
             ctx->cur_x += ctx->cur_x % ST_TAB_WIDTH;
             break;
         default:
             __st_plot_glyph(ctx, ctx->cur_x, ctx->cur_y, __st_get_glyph(ctx, ctx->uc_codepoint));
-            advance:
             ctx->cur_x++;
             if(ctx->cur_x >= ctx->fb_width/ctx->font_width) goto newline;
             __st_render_cursor(ctx);
