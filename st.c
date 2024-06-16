@@ -14,7 +14,7 @@ typedef struct {
    u16 magic;
    u8 mode;
    u8 char_size; 
-} psf1_header;
+} PACKED psf1_header;
 
 typedef struct {
     u32 magic;
@@ -25,7 +25,7 @@ typedef struct {
     u32 bytes_per_glyph;
     u32 font_height;
     u32 font_width;
-} psf2_header;
+} PACKED psf2_header;
 
 st_ctx ctx = {
         .fb_addr = 0,
@@ -76,17 +76,19 @@ void __st_plot_pixel(u32 x, u32 y, u32 color){
     *(u32*)&((u8*)ctx.fb_addr)[y * ctx.fb_pitch + x * (ctx.fb_bpp / 8)] = transformed_color;
 }
 
-void __st_plot_glyph(u32 x, u32 y, u32 g, u32 color_fg, u32 color_bg){
+void __st_plot_glyph(u32 x, u32 y, u16 g, u32 color_fg, u32 color_bg){
     if(x >= ctx.fb_width/ctx.font_width || y >= ctx.fb_height/ctx.font_height || g >= ctx.font_glyph_count){
         return;
     }
+
+    u8 width_bytes = ctx.font_width % 8 == 0 ? ctx.font_width / 8 : ((ctx.font_width / 8) + 1);
 
     //TODO: optimize this
     u8 *glyph = (u8*)(ctx.font_glyphs) + g * ctx.font_bytes_per_glyph;
     for(u32 i = 0; i < ctx.font_height; i++){
         // if you know how to make it less of a mess, please let me know
         for(u32 j = 0; j < ctx.font_width; j++){
-            _bool draw = (glyph[i * ((ctx.font_width / 8) + 1) + j / 8] >> (7 - j % 8)) & 1;
+            _bool draw = (glyph[i * width_bytes + j / 8] >> (7 - j % 8)) & 1;
             __st_plot_pixel(x * ctx.font_width + j, y * ctx.font_height + i, draw ? color_fg : color_bg);
         }
     }
@@ -117,26 +119,33 @@ void __st_render_cursor(){
 
 //===============================Table functions===============================
 
-u32 __st_get_glyph(u64 c) {
+u16 __st_get_glyph(u64 c) {
     if (ctx.font_type == 1 && ctx.font_utbl != NULL) { // PSF1
         u16* table = (u16*)(ctx.font_utbl);
-        u32 glyph_index = 0;
-        while (*table != 0xFFFF) {
-            if (*table == c) {
-                return glyph_index;
-            }
-            if (*table == 0xFFFE) {
+        u16 glyph_index = 0;
+        u64 uc = 0;
+        while ((u8*)table <= (u8*)ctx.font_addr + ctx.font_size) {
+            uc = *table;
+            if(uc == 0xffff){
                 glyph_index++;
+                table++;
+                continue;
+            } else{
+                uc = *table;
+            }
+            if(uc == c) {
+                return glyph_index;
             }
             table++;
         }
+        return glyph_index;
     } else if (ctx.font_type == 2 && ctx.font_utbl != NULL) { // PSF2
         u8* table = (u8*)(ctx.font_utbl);
-        u32 glyph_index = 0;
+        u16 glyph_index = 0;
         u64 uc = 0;
         while (table <= (u8*)ctx.font_addr + ctx.font_size) {
             uc = *table;
-            if(*table == 0xff){
+            if(uc == 0xff){
                 glyph_index++;
                 table++;
                 continue;
@@ -160,6 +169,7 @@ u32 __st_get_glyph(u64 c) {
             }
             table++;
         }
+        return 0;
     }
     return (u32)c;
 }
@@ -242,7 +252,7 @@ void st_write(u8 c){
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col = ctx.color_fg & 0xFFFFFF;
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col = ctx.color_bg & 0xFFFFFF;
 
-            u32 g = __st_get_glyph(ctx.uc_codepoint);
+            u16 g = __st_get_glyph(ctx.uc_codepoint);
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num = g & 0xFFF;
             __st_plot_glyph(ctx.cur_x, ctx.cur_y, g, ctx.color_fg, ctx.color_bg);
 
@@ -277,19 +287,17 @@ void st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
         ctx.font_type = 1;
         ctx.font_glyphs = (u32*)((u8*)font_data + sizeof(psf1_header));
         ctx.font_glyph_count = ((psf1_header*)font_data)->mode & PSF1_MODE_512 ? 512 : 256;
-        ctx.font_height = ((psf1_header*)font_data)->char_size;
         ctx.font_width = 8;
-        ctx.font_bytes_per_glyph = ((ctx.font_width / 8) + 1) * ctx.font_height;
+        ctx.font_height = ctx.font_bytes_per_glyph = ((psf1_header*)font_data)->char_size;
         ctx.font_utbl = ((psf1_header*)font_data)->mode & (PSF1_MODE_HASTABLE | PSF1_MODE_SEQ) ?
             (u32*)((u8*)ctx.font_glyphs + ctx.font_bytes_per_glyph * ctx.font_glyph_count) 
             : NULL;
-
     }else if((*(u32*)font_data) == PSF2_MAGIC){
         ctx.font_type = 2;
         ctx.font_glyphs = (u32*)((u8*)font_data + ((psf2_header*)font_data)->header_size);
         ctx.font_glyph_count = ((psf2_header*)font_data)->glyph_count;
-        ctx.font_height = ((psf2_header*)font_data)->font_height;
         ctx.font_width = ((psf2_header*)font_data)->font_width;
+        ctx.font_height = ((psf2_header*)font_data)->font_height;
         ctx.font_bytes_per_glyph = ((ctx.font_width / 8) + 1) * ctx.font_height;
         ctx.font_utbl = ((psf2_header*)font_data)->flags & (PSF2_FLAG_UC) ?
             (u32*)((u8*)ctx.font_glyphs + ctx.font_bytes_per_glyph * ctx.font_glyph_count) 
