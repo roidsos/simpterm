@@ -223,7 +223,7 @@ void st_write(u8 c){
             if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
                 __st_small_memcpy(ctx.screen_table, ctx.screen_table + (ctx.fb_width / ctx.font_width), (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD - 1) * sizeof(st_color_cell));
                 __st_redraw();
-               CTX.cur_y--;
+               ctx.cur_y--;
             }
             __st_render_cursor();
             break;
