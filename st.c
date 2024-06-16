@@ -278,7 +278,7 @@ void st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
         ctx.font_glyphs = (u32*)((u8*)font_data + sizeof(psf1_header));
         ctx.font_glyph_count = ((psf1_header*)font_data)->mode & PSF1_MODE_512 ? 512 : 256;
         ctx.font_height = ((psf1_header*)font_data)->char_size;
-        ctx.font_width = font_size / ctx.font_glyph_count / ctx.font_height;
+        ctx.font_width = 8;
         ctx.font_bytes_per_glyph = ((ctx.font_width / 8) + 1) * ctx.font_height;
         ctx.font_utbl = ((psf1_header*)font_data)->mode & (PSF1_MODE_HASTABLE | PSF1_MODE_SEQ) ?
             (u32*)((u8*)ctx.font_glyphs + ctx.font_bytes_per_glyph * ctx.font_glyph_count) 
