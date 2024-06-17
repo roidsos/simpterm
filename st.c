@@ -22,7 +22,11 @@ st_ctx ctx = {
         .color_fg = 0xffffff,
         .uc_codepoint = 0,
         .uc_remaining = 0,
+
         .in_esc = false,
+        .esc_type = 0,
+        .esc_cur_arg = 0,
+        .esc_ctrl_args = {},
 
         .screen_table = {},
 };
@@ -197,12 +201,12 @@ void __st_sgr(){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
         st_u8 b = ctx.esc_ctrl_args[4];
-        ctx.color_fg = (r << 16) | (g << 8) | b;
+        ctx.color_fg = (b << 16) | (g << 8) | r;
     } else if(ctx.esc_ctrl_args[0] == 48 && ctx.esc_ctrl_args[1] == 2){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
         st_u8 b = ctx.esc_ctrl_args[4];
-        ctx.color_bg = (r << 16) | (g << 8) | b;
+        ctx.color_bg = (b << 16) | (g << 8) | r;
     }
 }
 
@@ -214,6 +218,11 @@ void __st_eparse( char c){
     }
     ctx.in_esc = false;
     ctx.esc_type = 0;
+}
+void __st_clear_ctrl_args(){
+    for(st_u32 i = 0; i < ANSI_MAX_ARGS - 1; i++){
+        ctx.esc_ctrl_args[i] = 0;
+    }
 }
 
 void __st_eparse_ctrl(char c){
@@ -266,6 +275,8 @@ void __st_eparse_ctrl(char c){
     }
 
     ctx.in_esc = false;
+    ctx.esc_cur_arg = 0;
+    __st_clear_ctrl_args();
     ctx.esc_type = 0;
 }
 
@@ -379,6 +390,9 @@ void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch
     //interpret the font data
     ctx.font_addr = font_data;
     ctx.font_size = font_size;
+
+    __st_clear_ctrl_args();
+
     if((*(st_u16*)font_data) == PSF1_MAGIC){
         ctx.font_type = 1;
         ctx.font_glyphs = (st_u32*)((st_u8*)font_data + sizeof(psf1_header));
