@@ -46,6 +46,8 @@ typedef unsigned char st_bool;
 
 #define PSF2_FLAG_UC 0x01
 
+#define ANSI_MAX_ARGS 8
+
 typedef struct {
    st_u16 magic;
    st_u8 mode;
@@ -84,9 +86,9 @@ typedef struct {
     st_u8    fb_blue_mask_shift;
 
     //Cursor stuff
-    st_u32   cur_x;
-    st_u32   cur_y;
-    st_bool cur_visible;
+    st_u16   cur_x;
+    st_u16   cur_y;
+    st_bool  cur_visible;
 
     //Font stuff
     st_u32*  font_addr;
@@ -100,18 +102,17 @@ typedef struct {
     st_u32*  font_utbl;
 
     //State
-    st_u32 color_fg;
-    st_u32 color_bg;
+    st_u32 color_fg : 24;
+    st_u32 color_bg : 24;
     st_u8  uc_remaining;
     st_u64 uc_codepoint;
 
     //Escape stuffs
-    st_bool in_esc;
+    st_bool in_esc : 1;
     st_u8   esc_type : 3;
     st_u8   esc_cur_arg  : 2;
-    st_u64  esc_ctrl_args[3];
-  
-  
+    st_u16  esc_ctrl_args[ANSI_MAX_ARGS];
+
     st_color_cell screen_table[ST_MAX_ROWS * ST_MAX_COLS];
 
 } st_ctx;

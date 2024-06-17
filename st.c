@@ -204,9 +204,6 @@ void __st_eparse( char c){
 
 void __st_eparse_ctrl(char c){
     if (c >= '0' && c <= '9') {
-        if (ctx.esc_cur_arg >= 3) {
-            return;
-        }
         ctx.esc_ctrl_args[ctx.esc_cur_arg] *= 10;
         ctx.esc_ctrl_args[ctx.esc_cur_arg] += c - '0';
         return;
@@ -214,6 +211,9 @@ void __st_eparse_ctrl(char c){
 
     switch (c) {
         case ';':
+            if (ctx.esc_cur_arg == ANSI_MAX_ARGS - 1) {
+                return;
+            }
             ctx.esc_cur_arg++;
             return;
         case 'A':
@@ -252,14 +252,9 @@ void __st_eparse_ctrl(char c){
     ctx.esc_type = 0;
 }
 
-void __st_eparse_osc(__attribute__((unused)) char c){
-    //TODO: implement
-}
-
 void (*__st_eparse_tbl[])(char) = {
     __st_eparse,
-    __st_eparse_ctrl,
-    __st_eparse_osc
+    __st_eparse_ctrl
 };
 
 
