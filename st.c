@@ -1,5 +1,4 @@
 #include "st.h"
-#include "st_config.h"
 
 #define PSF1_MAGIC 0x0436
 #define PSF2_MAGIC 0x864ab572
