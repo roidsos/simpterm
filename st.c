@@ -20,9 +20,9 @@ st_ctx ctx = {
 
         .color_bg = 0x000000,
         .color_fg = 0xffffff,
-
         .uc_codepoint = 0,
         .uc_remaining = 0,
+        .in_esc = false,
 
         .screen_table = {},
 };
@@ -68,6 +68,24 @@ void __st_plot_glyph(st_u32 x, st_u32 y, st_u16 g, st_u32 color_fg, st_u32 color
     }
 }
 
+inline void __st_render_cursor(){
+    if(ctx.cur_visible){
+        st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
+        st_u32 col_bg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col;
+        st_u32 col_fg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col;
+        __st_plot_glyph(ctx.cur_x, ctx.cur_y, g, col_bg, col_fg);
+    }
+}
+
+inline void __st_delete_cursor(){
+    if(ctx.cur_visible){
+        st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
+        st_u32 col_bg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col;
+        st_u32 col_fg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col;
+        __st_plot_glyph(ctx.cur_x, ctx.cur_y, g, col_fg, col_bg);
+    }
+}
+
 void __st_clear(){
     for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
         for(st_u32 j = 0; j < ctx.fb_height / ctx.font_height; j++){
@@ -79,16 +97,10 @@ void __st_clear(){
     for(st_u32 i = 0; i < ctx.fb_width * ctx.fb_height; i++){
         __st_plot_pixel(i % ctx.fb_width, i / ctx.fb_width, ctx.color_bg);
     }
-}
+    ctx.cur_x = 0;
+    ctx.cur_y = 0;
 
-void __st_render_cursor(){
-    if(ctx.cur_visible){
-        for(st_u32 i = 0; i < ctx.font_height; i++){
-            for(st_u32 j = 0; j < ctx.font_width; j++){
-                __st_plot_pixel(ctx.cur_x * ctx.font_width + j, ctx.cur_y * ctx.font_height + i, ctx.color_fg);
-            }
-        }
-    }
+    __st_render_cursor();
 }
 
 //===============================Table functions===============================
@@ -156,11 +168,83 @@ void __st_redraw(){
         }
     }
 }
+//================================Escape parsing================================
+
+void __st_eparse( char c){
+    switch (c) {
+        case '[':
+        ctx.esc_type = 1;
+        return;
+    }
+    ctx.in_esc = false;
+    ctx.esc_type = 0;
+}
+
+void __st_eparse_ctrl(char c){
+    if (c >= '0' && c <= '9') {
+        if (ctx.esc_cur_arg >= 3) {
+            return;
+        }
+        ctx.esc_ctrl_args[ctx.esc_cur_arg] *= 10;
+        ctx.esc_ctrl_args[ctx.esc_cur_arg] += c - '0';
+        return;
+    }
+
+    switch (c) {
+        case ';':
+            ctx.esc_cur_arg++;
+            return;
+        case 'A':
+            __st_delete_cursor();
+            ctx.cur_y -= ctx.esc_ctrl_args[0];
+            __st_render_cursor();
+            return;
+        case 'B':
+            __st_delete_cursor();
+            ctx.cur_y += ctx.esc_ctrl_args[0];
+            __st_render_cursor();
+            return;
+        case 'C':
+            __st_delete_cursor();
+            ctx.cur_x += ctx.esc_ctrl_args[0];
+            __st_render_cursor();
+            return;
+        case 'D':
+            __st_delete_cursor();
+            ctx.cur_x -= ctx.esc_ctrl_args[0];
+            __st_render_cursor();
+            return;
+        case 'H':
+            __st_delete_cursor();
+            ctx.cur_x = ctx.esc_ctrl_args[0];
+            ctx.cur_y = ctx.esc_ctrl_args[1];
+            __st_render_cursor();
+            return;
+    }
+
+    ctx.in_esc = false;
+    ctx.esc_type = 0;
+}
+
+void __st_eparse_osc(__attribute__((unused)) char c){
+    //TODO: implement
+}
+
+void (*__st_eparse_tbl[])(char) = {
+    __st_eparse,
+    __st_eparse_ctrl,
+    __st_eparse_osc
+};
+
 
 //===============================Public functions===============================
 
-//TODO: multiple characters and UNICODE
 void st_write(st_u8 c){
+
+    if (ctx.in_esc) {
+        __st_eparse_tbl[ctx.esc_type](c);
+        return;
+    }
 
     //This lump of code stitches UNICODE characters together from UTF-8 multy-byte characters.
     if (ctx.uc_remaining > 0) {
@@ -192,16 +276,14 @@ void st_write(st_u8 c){
         return;
     }
 
-    #define ST_ERASE_CHAR __st_plot_glyph(ctx.cur_x, ctx.cur_y, __st_get_glyph(' '),0,0)
     switch(ctx.uc_codepoint){
         case 0x00:
         case 0x7f:
             return; //ignore
-        case 0x0b://FALLTHROUGH
-        case 0x0c://FALLTHROUGH
+        case '\v':  //treat vertical tabs as a newline
         case '\n':
             newline:
-            ST_ERASE_CHAR;
+            __st_delete_cursor();
             ctx.cur_x = 0;
             ctx.cur_y++;
             if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
@@ -215,12 +297,18 @@ void st_write(st_u8 c){
             ctx.cur_x--;
             break;
         case '\r':
-            ST_ERASE_CHAR;
+            __st_delete_cursor();
             ctx.cur_x = 0;
             break;
+        case '\f':
+            __st_clear();
+            break;
         case '\t':
-            ST_ERASE_CHAR;
+            __st_delete_cursor();
             ctx.cur_x += ctx.cur_x % ST_TAB_WIDTH;
+            break;
+        case '\e':
+            ctx.in_esc = true;
             break;
         default:
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col = ctx.color_fg & 0xFFFFFF;

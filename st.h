@@ -104,6 +104,14 @@ typedef struct {
     st_u32 color_bg;
     st_u8  uc_remaining;
     st_u64 uc_codepoint;
+
+    //Escape stuffs
+    st_bool in_esc;
+    st_u8   esc_type : 3;
+    st_u8   esc_cur_arg  : 2;
+    st_u64  esc_ctrl_args[3];
+  
+  
     st_color_cell screen_table[ST_MAX_ROWS * ST_MAX_COLS];
 
 } st_ctx;
