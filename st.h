@@ -110,7 +110,7 @@ typedef struct {
     //Escape stuffs
     st_bool in_esc : 1;
     st_u8   esc_type : 3;
-    st_u8   esc_cur_arg  : 2;
+    st_u8   esc_cur_arg;
     st_u16  esc_ctrl_args[ANSI_MAX_ARGS];
 
     st_color_cell screen_table[ST_MAX_ROWS * ST_MAX_COLS];
