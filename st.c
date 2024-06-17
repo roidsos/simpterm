@@ -276,6 +276,26 @@ void __st_eparse_ctrl(char c){
             __st_scroll();
             __st_render_cursor();
             break;
+        case 'E':
+            __st_delete_cursor();
+            ctx.cur_y += ctx.esc_ctrl_args[0];
+            ctx.cur_x = 0;
+            __st_scroll();
+            __st_render_cursor();
+            break;
+        case 'F':
+            __st_delete_cursor();
+            ctx.cur_y -= ctx.esc_ctrl_args[0];
+            ctx.cur_x = 0;
+            __st_scroll();
+            __st_render_cursor();
+            break;
+        case 'G':
+            __st_delete_cursor();
+            ctx.cur_x = ctx.esc_ctrl_args[0];
+            __st_render_cursor();
+            break;
+        case 'f': // same as 'H'
         case 'H':
             __st_delete_cursor();
             ctx.cur_x = ctx.esc_ctrl_args[0];
