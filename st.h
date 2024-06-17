@@ -78,7 +78,7 @@ typedef struct {
     st_u32 color_bg;
     st_u8  uc_remaining;
     st_u64 uc_codepoint;
-    st_color_cell screen_table[ST_MAX_WIDTH * ST_MAX_HEIGHT];
+    st_color_cell screen_table[ST_MAX_ROWS * ST_MAX_COLS];
 
 } st_ctx;
 
