@@ -201,7 +201,11 @@ void __st_sgr(){
     if(ctx.esc_ctrl_args[0] == 0){
         ctx.color_fg = 0xAAAAAA;
         ctx.color_bg = 0x000000;
-    //Ignore 1-4 cuz they are hard and impossible respectively
+    } else if(ctx.esc_ctrl_args[0] == 1){
+        ctx.color_fg = 0xFFFFFF;
+        ctx.color_bg = 0x000000;
+    }
+    //Ignore 2-4 cuz they are impossible 
     } else if(ctx.esc_ctrl_args[0] == 38 && ctx.esc_ctrl_args[1] == 2){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
