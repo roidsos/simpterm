@@ -205,6 +205,10 @@ void __st_sgr(){
         ctx.color_fg = 0xFFFFFF;
     } else if(ctx.esc_ctrl_args[0] == 2){
         ctx.color_fg = 0xAAAAAA;
+    } else if (ctx.esc_ctrl_args[0] == 7){
+        st_u32 tmp = ctx.color_fg;
+        ctx.color_fg = ctx.color_bg;
+        ctx.color_bg = tmp;
     }
     //Ignore 3-4 cuz they are impossible 
     } else if(ctx.esc_ctrl_args[0] == 38 && ctx.esc_ctrl_args[1] == 2){
