@@ -21,8 +21,21 @@ typedef unsigned char st_bool;
     #define NULL ((void *)0)
 #endif
 
-#include <st_config.h>
+#ifndef ST_TAB_WIDTH
+#define ST_TAB_WIDTH 4
+#endif
 
+#ifndef ST_MAX_COLS
+#define ST_MAX_COLS 256
+#endif
+
+#ifndef ST_MAX_ROWS
+#define ST_MAX_ROWS 256
+#endif
+
+#ifndef ST_SCROLL_TRESHOLD
+#define ST_SCROLL_TRESHOLD 1
+#endif
 
 typedef struct {
     st_u16 glyph_num : 12;
