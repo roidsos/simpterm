@@ -19,7 +19,7 @@ st_ctx ctx = {
         .cur_visible = true,
 
         .color_bg = 0x000000,
-        .color_fg = 0xffffff,
+        .color_fg = 0xaaaaaa,
         .uc_codepoint = 0,
         .uc_remaining = 0,
 
