@@ -130,11 +130,7 @@ void __st_scroll(){
     if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
         st_u32 n = ctx.cur_y - ((ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD);
         __st_small_memcpy(ctx.screen_table, ctx.screen_table + (ctx.fb_width / ctx.font_width) * n, (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD + n) * sizeof(st_color_cell));
-        if(ctx.cur_y < (ctx.fb_height/ctx.font_height)){
-            __st_small_memcpy(ctx.fb_addr,ctx.fb_addr + (ctx.fb_width * n * ctx.font_height), (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD + n) * ctx.font_height);
-        }else {
-            __st_redraw();
-        }
+        __st_redraw();
 
        ctx.cur_y = (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD;
     }
