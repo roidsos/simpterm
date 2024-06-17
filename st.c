@@ -1,30 +1,5 @@
 #include "st.h"
 
-#define PSF1_MAGIC 0x0436
-#define PSF2_MAGIC 0x864ab572
-
-#define PSF1_MODE_512 0x01
-#define PSF1_MODE_HASTABLE 0x02
-#define PSF1_MODE_SEQ 0x03
-
-#define PSF2_FLAG_UC 0x01
-
-typedef struct {
-   st_u16 magic;
-   st_u8 mode;
-   st_u8 char_size; 
-} PACKED psf1_header;
-
-typedef struct {
-    st_u32 magic;
-    st_u32 version;
-    st_u32 header_size;
-    st_u32 flags;
-    st_u32 glyph_count;
-    st_u32 bytes_per_glyph;
-    st_u32 font_height;
-    st_u32 font_width;
-} PACKED psf2_header;
 
 st_ctx ctx = {
         .fb_addr = 0,
