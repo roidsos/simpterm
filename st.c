@@ -197,12 +197,12 @@ st_u16 __st_get_glyph(st_u64 c) {
 //================================Escape parsing================================
 void __st_sgr(){
     //TODO:support more than just true color fg and bg
-    if(ctx.esc_ctrl_args[0] == 38){
+    if(ctx.esc_ctrl_args[0] == 38 && ctx.esc_ctrl_args[1] == 2){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
         st_u8 b = ctx.esc_ctrl_args[4];
         ctx.color_fg = (b << 16) | (g << 8) | r;
-    } else if(ctx.esc_ctrl_args[0] == 48){
+    } else if(ctx.esc_ctrl_args[0] == 48 && ctx.esc_ctrl_args[1] == 2){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
         st_u8 b = ctx.esc_ctrl_args[4];
