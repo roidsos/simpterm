@@ -191,6 +191,20 @@ st_u16 __st_get_glyph(st_u64 c) {
     return (st_u32)c;
 }
 //================================Escape parsing================================
+void __st_sgr(){
+    //TODO:support more than just true color fg and bg
+    if(ctx.esc_ctrl_args[0] == 38 && ctx.esc_ctrl_args[1] == 2){
+        st_u8 r = ctx.esc_ctrl_args[2];
+        st_u8 g = ctx.esc_ctrl_args[3];
+        st_u8 b = ctx.esc_ctrl_args[4];
+        ctx.color_fg = (r << 16) | (g << 8) | b;
+    } else if(ctx.esc_ctrl_args[0] == 48 && ctx.esc_ctrl_args[1] == 2){
+        st_u8 r = ctx.esc_ctrl_args[2];
+        st_u8 g = ctx.esc_ctrl_args[3];
+        st_u8 b = ctx.esc_ctrl_args[4];
+        ctx.color_bg = (r << 16) | (g << 8) | b;
+    }
+}
 
 void __st_eparse( char c){
     switch (c) {
@@ -221,31 +235,34 @@ void __st_eparse_ctrl(char c){
             ctx.cur_y -= ctx.esc_ctrl_args[0];
             __st_scroll();
             __st_render_cursor();
-            return;
+            break;
         case 'B':
             __st_delete_cursor();
             ctx.cur_y += ctx.esc_ctrl_args[0];
             __st_scroll();
             __st_render_cursor();
-            return;
+            break;
         case 'C':
             __st_delete_cursor();
             ctx.cur_x += ctx.esc_ctrl_args[0];
             __st_scroll();
             __st_render_cursor();
-            return;
+            break;
         case 'D':
             __st_delete_cursor();
             ctx.cur_x -= ctx.esc_ctrl_args[0];
             __st_scroll();
             __st_render_cursor();
-            return;
+            break;
         case 'H':
             __st_delete_cursor();
             ctx.cur_x = ctx.esc_ctrl_args[0];
             ctx.cur_y = ctx.esc_ctrl_args[1];
             __st_render_cursor();
-            return;
+            break;
+        case 'm':
+            __st_sgr();
+            break;
     }
 
     ctx.in_esc = false;
