@@ -31,6 +31,8 @@ st_ctx ctx = {
         .screen_table = {},
 };
 
+st_ctx saved_ctx;
+
 
 //===============================Helper functions===============================
 
@@ -138,6 +140,14 @@ void __st_scroll(){
     }
 }
 
+void __st_save_state(){
+    __st_small_memcpy(&saved_ctx, &ctx, sizeof(ctx));
+}
+
+void __st_restore_state(){
+    __st_small_memcpy(&ctx, &saved_ctx, sizeof(ctx));
+}
+
 //===============================Table functions===============================
 
 st_u16 __st_get_glyph(st_u64 c) {
@@ -209,8 +219,7 @@ void __st_sgr(){
         st_u32 tmp = ctx.color_fg;
         ctx.color_fg = ctx.color_bg;
         ctx.color_bg = tmp;
-    }
-    //Ignore 3-4 cuz they are impossible 
+    //Ignore 3-4 cuz they are impossible
     } else if(ctx.esc_ctrl_args[0] == 38 && ctx.esc_ctrl_args[1] == 2){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
@@ -233,8 +242,14 @@ void __st_clear_ctrl_args(){
 void __st_eparse( char c){
     switch (c) {
         case '[':
-        ctx.esc_type = 1;
-        return;
+            ctx.esc_type = 1;
+            return;
+        case '7':
+            __st_save_state();
+            break;
+        case '8':
+            __st_restore_state();
+            break;
     }
     ctx.in_esc = false;
 }
@@ -301,6 +316,19 @@ void __st_eparse_ctrl(char c){
             ctx.cur_x = ctx.esc_ctrl_args[0];
             ctx.cur_y = ctx.esc_ctrl_args[1];
             __st_render_cursor();
+            break;
+        case 'J':
+            if(ctx.esc_ctrl_args[0] != 2){
+                break;
+            }
+            __st_clear();
+            break;
+        case 's':
+            __st_save_state();
+            break;
+        case 'u':
+            __st_restore_state();
+            __st_redraw();
             break;
         case 'm':
             __st_sgr();
@@ -448,4 +476,5 @@ void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch
     }
 
     __st_render_cursor();
+    __st_small_memcpy(&saved_ctx, &ctx, sizeof(st_ctx));
 }
