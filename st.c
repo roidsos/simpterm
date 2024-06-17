@@ -197,16 +197,22 @@ st_u16 __st_get_glyph(st_u64 c) {
 //================================Escape parsing================================
 void __st_sgr(){
     //TODO:support more than just true color fg and bg
-    if(ctx.esc_ctrl_args[0] == 38 && ctx.esc_ctrl_args[1] == 2){
+    if(ctx.esc_ctrl_args[0] == 38){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
         st_u8 b = ctx.esc_ctrl_args[4];
         ctx.color_fg = (b << 16) | (g << 8) | r;
-    } else if(ctx.esc_ctrl_args[0] == 48 && ctx.esc_ctrl_args[1] == 2){
+    } else if(ctx.esc_ctrl_args[0] == 48){
         st_u8 r = ctx.esc_ctrl_args[2];
         st_u8 g = ctx.esc_ctrl_args[3];
         st_u8 b = ctx.esc_ctrl_args[4];
         ctx.color_bg = (b << 16) | (g << 8) | r;
+    }
+}
+
+void __st_clear_ctrl_args(){
+    for(st_u32 i = 0; i < ANSI_MAX_ARGS - 1; i++){
+        ctx.esc_ctrl_args[i] = 0;
     }
 }
 
@@ -217,14 +223,7 @@ void __st_eparse( char c){
         return;
     }
     ctx.in_esc = false;
-    ctx.esc_type = 0;
 }
-void __st_clear_ctrl_args(){
-    for(st_u32 i = 0; i < ANSI_MAX_ARGS - 1; i++){
-        ctx.esc_ctrl_args[i] = 0;
-    }
-}
-
 void __st_eparse_ctrl(char c){
     if (c >= '0' && c <= '9') {
         ctx.esc_ctrl_args[ctx.esc_cur_arg] *= 10;
@@ -275,9 +274,6 @@ void __st_eparse_ctrl(char c){
     }
 
     ctx.in_esc = false;
-    ctx.esc_cur_arg = 0;
-    __st_clear_ctrl_args();
-    ctx.esc_type = 0;
 }
 
 void (*__st_eparse_tbl[])(char) = {
@@ -354,6 +350,9 @@ void st_write(st_u8 c){
             break;
         case '\e':
             ctx.in_esc = true;
+            ctx.esc_cur_arg = 0;
+            __st_clear_ctrl_args();
+            ctx.esc_type = 0;
             break;
         default:
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col = ctx.color_fg & 0xFFFFFF;
