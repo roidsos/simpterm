@@ -213,6 +213,7 @@ void __st_sgr(){
         st_u8 b = ctx.esc_ctrl_args[4];
         ctx.color_bg = (b << 16) | (g << 8) | r;
     }
+}
 
 void __st_clear_ctrl_args(){
     for(st_u32 i = 0; i < ANSI_MAX_ARGS - 1; i++){
