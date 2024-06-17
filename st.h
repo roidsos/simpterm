@@ -1,59 +1,80 @@
 #ifndef __ST_H__
 #define __ST_H__
 
-#include "libmacro/std.h"
+typedef unsigned char st_u8;
+typedef unsigned short st_u16;
+typedef unsigned int st_u32;
+typedef unsigned long long st_u64;
+
+typedef unsigned char st_bool;
+
+#ifndef true
+    #define true 1
+    #define false 0
+#endif
+
+#ifndef PACKED
+    #define PACKED __attribute__((packed))
+#endif
+
+#ifndef NULL
+    #define NULL ((void *)0)
+#endif
+
 #include <st_config.h>
+
+
 typedef struct {
-    u16 glyph_num : 12;
-    u32 fg_col : 24;
-    u32 bg_col : 24;
+    st_u16 glyph_num : 12;
+    st_u32 fg_col : 24;
+    st_u32 bg_col : 24;
 } PACKED st_color_cell;
 
 typedef struct {
     //Framebuffer stuff
-    u32*  fb_addr;
-    u32   fb_width;
-    u32   fb_height;
-    u32   fb_pitch;
-    u32   fb_bpp;
-    u8    fb_red_mask_size;
-    u8    fb_red_mask_shift;
-    u8    fb_green_mask_size;
-    u8    fb_green_mask_shift;
-    u8    fb_blue_mask_size;
-    u8    fb_blue_mask_shift;
+    st_u32*  fb_addr;
+    st_u32   fb_width;
+    st_u32   fb_height;
+    st_u32   fb_pitch;
+    st_u32   fb_bpp;
+    st_u8    fb_red_mask_size;
+    st_u8    fb_red_mask_shift;
+    st_u8    fb_green_mask_size;
+    st_u8    fb_green_mask_shift;
+    st_u8    fb_blue_mask_size;
+    st_u8    fb_blue_mask_shift;
 
     //Cursor stuff
-    u32   cur_x;
-    u32   cur_y;
-    _bool cur_visible;
+    st_u32   cur_x;
+    st_u32   cur_y;
+    st_bool cur_visible;
 
     //Font stuff
-    u32*  font_addr;
-    u32   font_size;
-    u8    font_type;
-    u32   font_width;
-    u32   font_height;
-    u32   font_glyph_count;
-    u32   font_bytes_per_glyph;
-    u32*  font_glyphs;
-    u32*  font_utbl;
+    st_u32*  font_addr;
+    st_u32   font_size;
+    st_u8    font_type;
+    st_u32   font_width;
+    st_u32   font_height;
+    st_u32   font_glyph_count;
+    st_u32   font_bytes_per_glyph;
+    st_u32*  font_glyphs;
+    st_u32*  font_utbl;
 
     //State
-    u32 color_fg;
-    u32 color_bg;
-    u8  uc_remaining;
-    u64 uc_codepoint;
+    st_u32 color_fg;
+    st_u32 color_bg;
+    st_u8  uc_remaining;
+    st_u64 uc_codepoint;
     st_color_cell screen_table[ST_MAX_WIDTH * ST_MAX_HEIGHT];
 
 } st_ctx;
 
-void st_write(u8 c);
+void st_write(st_u8 c);
 
-void st_init(u32* fb_addr, u32 fb_width, u32 fb_height, u32 fb_pitch,
-               u32 fb_bpp, u8 fb_red_mask_size, u8 fb_red_mask_shift, 
-               u8 fb_green_mask_size, u8 fb_green_mask_shift, u8 fb_blue_mask_size, u8 fb_blue_mask_shift,
+void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch,
+               st_u32 fb_bpp, st_u8 fb_red_mask_size, st_u8 fb_red_mask_shift, 
+               st_u8 fb_green_mask_size, st_u8 fb_green_mask_shift, st_u8 fb_blue_mask_size, st_u8 fb_blue_mask_shift,
 
-               u32* font_data,u32 font_size);
+               st_u32* font_data,st_u32 font_size);
 
 #endif // __ST_H__
