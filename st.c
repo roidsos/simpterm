@@ -94,6 +94,15 @@ void __st_delete_cursor(){
     }
 }
 
+void __st_redraw(){
+    for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
+        for(st_u32 j = 0; j < ctx.fb_height / ctx.font_height; j++){
+            st_color_cell cell = ctx.screen_table[i + j * (ctx.fb_width / ctx.font_width)];
+            __st_plot_glyph(i,j,cell.glyph_num,cell.fg_col,cell.bg_col);
+        }
+    }
+}
+
 void __st_clear(){
     for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
         for(st_u32 j = 0; j < ctx.fb_height / ctx.font_height; j++){
@@ -109,6 +118,20 @@ void __st_clear(){
     ctx.cur_y = 0;
 
     __st_render_cursor();
+}
+
+void __st_scroll(){
+    if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
+        st_u32 n = ctx.cur_y - ((ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD);
+        __st_small_memcpy(ctx.screen_table, ctx.screen_table + (ctx.fb_width / ctx.font_width) * n, (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD + n) * sizeof(st_color_cell));
+        if(ctx.cur_y < (ctx.fb_height/ctx.font_height)){
+            __st_small_memcpy(ctx.fb_addr,ctx.fb_addr + (ctx.fb_width * n * ctx.font_height), (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD + n) * ctx.font_height);
+        }else {
+            __st_redraw();
+        }
+
+       ctx.cur_y = (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD;
+    }
 }
 
 //===============================Table functions===============================
@@ -167,15 +190,6 @@ st_u16 __st_get_glyph(st_u64 c) {
     }
     return (st_u32)c;
 }
-
-void __st_redraw(){
-    for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
-        for(st_u32 j = 0; j < ctx.fb_height / ctx.font_height; j++){
-            st_color_cell cell = ctx.screen_table[i + j * (ctx.fb_width / ctx.font_width)];
-            __st_plot_glyph(i,j,cell.glyph_num,cell.fg_col,cell.bg_col);
-        }
-    }
-}
 //================================Escape parsing================================
 
 void __st_eparse( char c){
@@ -205,21 +219,25 @@ void __st_eparse_ctrl(char c){
         case 'A':
             __st_delete_cursor();
             ctx.cur_y -= ctx.esc_ctrl_args[0];
+            __st_scroll();
             __st_render_cursor();
             return;
         case 'B':
             __st_delete_cursor();
             ctx.cur_y += ctx.esc_ctrl_args[0];
+            __st_scroll();
             __st_render_cursor();
             return;
         case 'C':
             __st_delete_cursor();
             ctx.cur_x += ctx.esc_ctrl_args[0];
+            __st_scroll();
             __st_render_cursor();
             return;
         case 'D':
             __st_delete_cursor();
             ctx.cur_x -= ctx.esc_ctrl_args[0];
+            __st_scroll();
             __st_render_cursor();
             return;
         case 'H':
@@ -294,11 +312,7 @@ void st_write(st_u8 c){
             __st_delete_cursor();
             ctx.cur_x = 0;
             ctx.cur_y++;
-            if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
-                __st_small_memcpy(ctx.screen_table, ctx.screen_table + (ctx.fb_width / ctx.font_width), (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD - 1) * sizeof(st_color_cell));
-                __st_redraw();
-               ctx.cur_y--;
-            }
+            __st_scroll();
             __st_render_cursor();
             break;
         case '\b':
