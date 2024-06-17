@@ -68,7 +68,7 @@ void __st_plot_glyph(st_u32 x, st_u32 y, st_u16 g, st_u32 color_fg, st_u32 color
     }
 }
 
-inline void __st_render_cursor(){
+__attribute__((__always_inline__)) void __st_render_cursor(){
     if(ctx.cur_visible){
         st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
         st_u32 col_bg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col;
@@ -77,7 +77,7 @@ inline void __st_render_cursor(){
     }
 }
 
-inline void __st_delete_cursor(){
+__attribute__((__always_inline__)) void __st_delete_cursor(){
     if(ctx.cur_visible){
         st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
         st_u32 col_bg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col;
