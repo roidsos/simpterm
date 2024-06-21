@@ -16,6 +16,8 @@ st_ctx ctx = {
 
         .cur_x = 0,
         .cur_y = 0,
+        .cur_saved_x = 0,
+        .cur_saved_y = 0,
         .cur_visible = true,
 
         .color_bg = 0x000000,
@@ -30,8 +32,6 @@ st_ctx ctx = {
 
         .screen_table = {},
 };
-
-st_ctx saved_ctx;
 
 
 //===============================Helper functions===============================
@@ -137,11 +137,15 @@ void __st_scroll(){
 }
 
 void __st_save_state(){
-    __st_small_memcpy(&saved_ctx, &ctx, sizeof(ctx));
+    ctx.cur_saved_x = ctx.cur_x;
+    ctx.cur_saved_y = ctx.cur_y;
 }
 
 void __st_restore_state(){
-    __st_small_memcpy(&ctx, &saved_ctx, sizeof(ctx));
+    __st_delete_cursor();
+    ctx.cur_x = ctx.cur_saved_x;
+    ctx.cur_y = ctx.cur_saved_y;
+    __st_render_cursor();
 }
 
 //===============================Table functions===============================
@@ -246,6 +250,9 @@ void __st_eparse( char c){
         case '8':
             __st_restore_state();
             break;
+        case 'c':
+            __st_clear();
+            break;
     }
     ctx.in_esc = false;
 }
@@ -324,13 +331,9 @@ void __st_eparse_ctrl(char c){
             break;
         case 'u':
             __st_restore_state();
-            __st_redraw();
             break;
         case 'm':
             __st_sgr();
-            break;
-        case 'c':
-            __st_clear();
             break;
     }
 

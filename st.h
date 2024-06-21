@@ -88,6 +88,8 @@ typedef struct {
     //Cursor stuff
     st_u16   cur_x;
     st_u16   cur_y;
+    st_u16   cur_saved_x;
+    st_u16   cur_saved_y;
     st_bool  cur_visible;
 
     //Font stuff
