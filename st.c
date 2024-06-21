@@ -329,6 +329,9 @@ void __st_eparse_ctrl(char c){
         case 'm':
             __st_sgr();
             break;
+        case 'c':
+            __st_clear();
+            break;
     }
 
     ctx.in_esc = false;
