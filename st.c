@@ -81,9 +81,6 @@ void __st_render_cursor(){
         st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
         st_u32 col_bg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col;
         st_u32 col_fg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col;
-        if (g == 0) {
-            g = __st_get_glyph(' ');
-        }
         __st_plot_glyph(ctx.cur_x, ctx.cur_y, g, col_bg, col_fg);
     }
 }
@@ -93,23 +90,15 @@ void __st_delete_cursor(){
         st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
         st_u32 col_bg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col;
         st_u32 col_fg = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col;
-        if (g == 0) {
-            g = __st_get_glyph(' ');
-        }
         __st_plot_glyph(ctx.cur_x, ctx.cur_y, g, col_fg, col_bg);
     }
 }
 
 void __st_redraw(st_u8 starty){
-    for (st_u32 i = 0; i < ctx.fb_width; i++) {
-        for (st_u32 j = 0; j < ctx.fb_height; j++) {
-            __st_plot_pixel(i, j, ctx.color_bg);
-        }
-    }
     for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
         for(st_u32 j = starty; j < ctx.fb_height / ctx.font_height; j++){
             st_color_cell cell = ctx.screen_table[i + j * (ctx.fb_width / ctx.font_width)];
-            if (cell.glyph_num == 0) continue;
+            //if (cell.glyph_num == 0) continue;
             __st_plot_glyph(i,j - starty,cell.glyph_num,cell.fg_col,cell.bg_col);
         }
     }
@@ -137,7 +126,7 @@ void __st_scroll(){
         st_u32 n = ctx.cur_y - ((ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD);
 
         // fake it visually by starting at the 
-        __st_redraw(n);
+        __st_redraw(n - 1);
 
         // commit it to the table
         __st_small_memcpy(ctx.screen_table, ctx.screen_table + (ctx.fb_width / ctx.font_width) * n, (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD + n) * sizeof(st_color_cell));
