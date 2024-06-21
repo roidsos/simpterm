@@ -125,7 +125,7 @@ void __st_scroll(){
     if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
         st_u32 n = ctx.cur_y - ((ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD);
 
-        // fake it visually by starting 'n' lines bellow the top
+        // fake it visually by starting n lines bellow the top
         __st_redraw(n);
 
         // commit it to the table
