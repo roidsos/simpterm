@@ -478,5 +478,4 @@ void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch
     }
 
     __st_render_cursor();
-    __st_small_memcpy(&saved_ctx, &ctx, sizeof(st_ctx));
 }
