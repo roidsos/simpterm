@@ -26,11 +26,11 @@ typedef unsigned char st_bool;
 #endif
 
 #ifndef ST_MAX_COLS
-#define ST_MAX_COLS 256
+#define ST_MAX_COLS 100
 #endif
 
 #ifndef ST_MAX_ROWS
-#define ST_MAX_ROWS 256
+#define ST_MAX_ROWS 100
 #endif
 
 #ifndef ST_SCROLL_TRESHOLD
