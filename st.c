@@ -97,8 +97,8 @@ void __st_delete_cursor(){
 void __st_redraw(st_u8 starty){
     for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
         for(st_u32 j = starty; j < ctx.fb_height / ctx.font_height; j++){
-            st_color_cell cell = ctx.screen_table[i + j * (ctx.fb_width / ctx.font_width)];
-            //if (cell.glyph_num == 0) continue;
+            register st_color_cell cell = ctx.screen_table[i + j * (ctx.fb_width / ctx.font_width)];
+            if (cell.glyph_num == ctx.screen_table[i + (j - starty) * (ctx.fb_width / ctx.font_width)].glyph_num) continue;
             __st_plot_glyph(i,j - starty,cell.glyph_num,cell.fg_col,cell.bg_col);
         }
     }
@@ -126,7 +126,7 @@ void __st_scroll(){
         st_u32 n = ctx.cur_y - ((ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD);
 
         // fake it visually by starting at the 
-        __st_redraw(n - 1);
+        __st_redraw(n);
 
         // commit it to the table
         __st_small_memcpy(ctx.screen_table, ctx.screen_table + (ctx.fb_width / ctx.font_width) * n, (ctx.fb_width / ctx.font_width) * ((ctx.fb_height / ctx.font_height)  - ST_SCROLL_TRESHOLD + n) * sizeof(st_color_cell));
