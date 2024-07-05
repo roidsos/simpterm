@@ -1,6 +1,6 @@
 #include "st.h"
 
-
+//Central context, this is the state of the terminal
 st_ctx ctx = {
         .fb_addr = 0,
         .fb_width = 0,
@@ -35,6 +35,12 @@ st_ctx ctx = {
 
 
 //===============================Helper functions===============================
+/*
+ * @brief Copies n bytes from src to dest
+ * @param dest The destination
+ * @param src The source
+ * @param n The number of bytes
+*/
 
 void __st_small_memcpy(void* dest, const void* src, st_u32 n){
     for(st_u32 i = 0; i < n; i++){
@@ -44,6 +50,12 @@ void __st_small_memcpy(void* dest, const void* src, st_u32 n){
 
 //===============================Drawing functions===============================
 
+/*
+ * @brief Plots a pixel
+ * @param x The x coordinate
+ * @param y The y coordinate
+ * @param color The color in the format 0xAABBGGRR
+*/
 void __st_plot_pixel(st_u32 x, st_u32 y, st_u32 color){
     if(x >= ctx.fb_width || y >= ctx.fb_height){
         return;
@@ -55,6 +67,15 @@ void __st_plot_pixel(st_u32 x, st_u32 y, st_u32 color){
 
     *(st_u32*)&((st_u8*)ctx.fb_addr)[y * ctx.fb_pitch + x * (ctx.fb_bpp / 8)] = transformed_color;
 }
+
+/*
+ * @brief Plots a glyph
+ * @param x The x coordinate
+ * @param y The y coordinate
+ * @param g The glyph index
+ * @param color_fg The color in the format 0xAABBGGRR
+ * @param color_bg The color in the format 0xAABBGGRR
+*/
 
 void __st_plot_glyph(st_u32 x, st_u32 y, st_u16 g, st_u32 color_fg, st_u32 color_bg){
     if(x >= ctx.fb_width/ctx.font_width || y >= ctx.fb_height/ctx.font_height || g >= ctx.font_glyph_count){
@@ -74,8 +95,12 @@ void __st_plot_glyph(st_u32 x, st_u32 y, st_u16 g, st_u32 color_fg, st_u32 color
     }
 }
 
+// forward declaration for __st_get_glyph defined on line 176
 st_u16 __st_get_glyph(st_u64 c);
 
+/*
+ * @brief Renders the cursor by inverting the current cell
+*/
 void __st_render_cursor(){
     if(ctx.cur_visible){
         st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
@@ -85,6 +110,9 @@ void __st_render_cursor(){
     }
 }
 
+/*
+ * @brief Deletes the cursor by redrawing the current cell
+*/
 void __st_delete_cursor(){
     if(ctx.cur_visible){
         st_u16 g      = ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].glyph_num;
@@ -94,6 +122,10 @@ void __st_delete_cursor(){
     }
 }
 
+/*
+ * @brief Redraws the screen
+ * @param starty The scrolling offset
+*/
 void __st_redraw(st_u8 starty){
     for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
         for(st_u32 j = starty; j < ctx.fb_height / ctx.font_height; j++){
@@ -104,6 +136,9 @@ void __st_redraw(st_u8 starty){
     }
 }
 
+/*
+ * @brief Clears the screen
+*/
 void __st_clear(){
     for(st_u32 i = 0; i < ctx.fb_width / ctx.font_width; i++){
         for(st_u32 j = 0; j < ctx.fb_height / ctx.font_height; j++){
@@ -121,6 +156,9 @@ void __st_clear(){
     __st_render_cursor();
 }
 
+/*
+ * @brief Checks if the screen needs to be scrolled, and scrolls it
+*/
 void __st_scroll(){
     if(ctx.cur_y >= (ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD){
         st_u32 n = ctx.cur_y - ((ctx.fb_height/ctx.font_height) - ST_SCROLL_TRESHOLD);
@@ -136,11 +174,17 @@ void __st_scroll(){
     __st_render_cursor();
 }
 
+/*
+ * @brief Saves the current cursor position
+*/
 void __st_save_state(){
     ctx.cur_saved_x = ctx.cur_x;
     ctx.cur_saved_y = ctx.cur_y;
 }
 
+/*
+ * @brief Restores the cursor position
+*/
 void __st_restore_state(){
     __st_delete_cursor();
     ctx.cur_x = ctx.cur_saved_x;
@@ -150,6 +194,11 @@ void __st_restore_state(){
 
 //===============================Table functions===============================
 
+/*
+ * @brief Gets the glyph index from the font table
+ * @param c The unicode codepoint
+ * @return The glyph index
+*/
 st_u16 __st_get_glyph(st_u64 c) {
     if (ctx.font_type == 1 && ctx.font_utbl != NULL) { // PSF1
         st_u16* table = (st_u16*)(ctx.font_utbl);
@@ -205,8 +254,9 @@ st_u16 __st_get_glyph(st_u64 c) {
     return (st_u32)c;
 }
 //================================Escape parsing================================
-void __st_sgr(){
+//Im lazy to write comments from here
 
+void __st_sgr(){
     //TODO:support more than just true color fg and bg
     if(ctx.esc_ctrl_args[0] == 0){
         ctx.color_fg = 0xAAAAAA;
