@@ -389,9 +389,14 @@ void (*__st_eparse_tbl[])(char) = {
     __st_eparse_ctrl
 };
 
-
 //===============================Public functions===============================
 
+//back to commenting
+
+/*
+ * @brief Writes a single character
+ * @param c The character
+*/
 void st_write(st_u8 c){
 
     if (ctx.in_esc) {
@@ -399,7 +404,7 @@ void st_write(st_u8 c){
         return;
     }
 
-    //This lump of code stitches UNICODE characters together from UTF-8 multy-byte characters.
+    //stitch UNICODE characters together from UTF-8 multy-byte characters.
     if (ctx.uc_remaining > 0) {
         if ((c & 0xc0) != 0x80) {
             ctx.uc_remaining = 0;
@@ -414,7 +419,7 @@ void st_write(st_u8 c){
         ctx.uc_codepoint = c;
     }
 
-    //This lump of code detects UTF-8 multy-byte characters, and sets the ctx.uc_remaining variable to how many bytes are remaining.
+    //detect UTF-8 multy-byte characters, and sets the ctx.uc_remaining variable to how many bytes are remaining.
     if (c >= 0xc0 && c <= 0xf7) {
         if (c >= 0xc0 && c <= 0xdf) {
             ctx.uc_remaining = 1;
@@ -434,34 +439,40 @@ void st_write(st_u8 c){
         case 0x7f:
             return; //ignore
         case '\v':  //treat vertical tabs as a newline
-        case '\n':
+        case '\n'://newline
             newline:
             __st_delete_cursor();
             ctx.cur_x = 0;
             ctx.cur_y++;
             __st_scroll();
             break;
-        case '\b':
+        case '\b': //backspace
+            __st_delete_cursor()
             ctx.cur_x--;
+            if(ctx.cur_x < 0){
+                ctx.cur_x = ctx.fb_width / ctx.font_width;
+                ctx.cur_y--;
+            }
+            __st_render_cursor();
             break;
-        case '\r':
+        case '\r': //carriage return
             __st_delete_cursor();
             ctx.cur_x = 0;
             break;
-        case '\f':
+        case '\f': //formfeed
             __st_clear();
             break;
-        case '\t':
+        case '\t': //tab
             __st_delete_cursor();
             ctx.cur_x += ctx.cur_x % ST_TAB_WIDTH;
             break;
-        case '\e':
+        case '\e': //escape
             ctx.in_esc = true;
             ctx.esc_cur_arg = 0;
             __st_clear_ctrl_args();
             ctx.esc_type = 0;
             break;
-        default:
+        default: //normal character
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].fg_col = ctx.color_fg;
             ctx.screen_table[ctx.cur_x + ctx.cur_y * (ctx.fb_width / ctx.font_width)].bg_col = ctx.color_bg;
 
@@ -476,11 +487,28 @@ void st_write(st_u8 c){
     }
 }
 
+/*
+ * @brief Initializes the terminal
+ * @param fb_addr The framebuffer address
+ * @param fb_width The framebuffer width
+ * @param fb_height The framebuffer height
+ * @param fb_pitch The framebuffer pitch
+ * @param fb_bpp The framebuffer bits per pixel
+ * @param fb_red_mask_size The framebuffer red mask size
+ * @param fb_red_mask_shift The framebuffer red mask shift
+ * @param fb_green_mask_size The framebuffer green mask size
+ * @param fb_green_mask_shift The framebuffer green mask shift
+ * @param fb_blue_mask_size The framebuffer blue mask size
+ * @param fb_blue_mask_shift The framebuffer blue mask shift
+ * @param font_data The font data
+ * @param font_data_size The size of the font data
+*/
+
 void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch,
                st_u32 fb_bpp, st_u8 fb_red_mask_size, st_u8 fb_red_mask_shift, 
                st_u8 fb_green_mask_size, st_u8 fb_green_mask_shift, st_u8 fb_blue_mask_size, st_u8 fb_blue_mask_shift,
 
-               st_u32* font_data, st_u32 font_size){
+               st_u32* font_data, st_u32 font_data_size){
     ctx.fb_addr = fb_addr,
     ctx.fb_width = fb_width,
     ctx.fb_height = fb_height,
@@ -495,15 +523,13 @@ void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch
 
     //interpret the font data
     ctx.font_addr = font_data;
-    ctx.font_size = font_size;
-
-    __st_clear_ctrl_args();
+    ctx.font_size = font_data_size;
 
     if((*(st_u16*)font_data) == PSF1_MAGIC){
         ctx.font_type = 1;
         ctx.font_glyphs = (st_u32*)((st_u8*)font_data + sizeof(psf1_header));
         ctx.font_glyph_count = ((psf1_header*)font_data)->mode & PSF1_MODE_512 ? 512 : 256;
-        ctx.font_width = 8;
+        ctx.font_width = 8; //in PSF1, the width is always 8
         ctx.font_height = ctx.font_bytes_per_glyph = ((psf1_header*)font_data)->char_size;
         ctx.font_utbl = ((psf1_header*)font_data)->mode & (PSF1_MODE_HASTABLE | PSF1_MODE_SEQ) ?
             (st_u32*)((st_u8*)ctx.font_glyphs + ctx.font_bytes_per_glyph * ctx.font_glyph_count) 
@@ -521,4 +547,5 @@ void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch
     }
 
     __st_render_cursor();
+    __st_clear_ctrl_args();
 }

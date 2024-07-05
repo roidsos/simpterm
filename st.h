@@ -125,6 +125,6 @@ void st_init(st_u32* fb_addr, st_u32 fb_width, st_u32 fb_height, st_u32 fb_pitch
                st_u32 fb_bpp, st_u8 fb_red_mask_size, st_u8 fb_red_mask_shift, 
                st_u8 fb_green_mask_size, st_u8 fb_green_mask_shift, st_u8 fb_blue_mask_size, st_u8 fb_blue_mask_shift,
 
-               st_u32* font_data,st_u32 font_size);
+               st_u32* font_data,st_u32 font_data_size);
 
 #endif // __ST_H__
