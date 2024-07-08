@@ -447,7 +447,7 @@ void st_write(st_u8 c){
             __st_scroll();
             break;
         case '\b': //backspace
-            __st_delete_cursor()
+            __st_delete_cursor();
             ctx.cur_x--;
             if(ctx.cur_x > 0xEFFF){ // overflow check cuz its unsigned
                 ctx.cur_x = ctx.fb_width / ctx.font_width;
